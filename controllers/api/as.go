@@ -81,6 +81,14 @@ type ConnReply struct {
 	Certificate string // certificate of the responding AS
 }
 
+type Transaction struct {
+	TransactionId  uint64
+	Time           string
+	Source         string // free form text for the reply
+	Destination    string
+	Value          uint64
+}
+
 func FindAccountByRequest(r *http.Request) (*models.Account, error) {
 	account_id := mux.Vars(r)["account_id"]
 
@@ -487,6 +495,32 @@ func (c *ASController) prepConnReplies(in []models.ConnReply) []ConnReply {
 	return out
 }
 
+
+///////////////////////////
+///////////////////////////
+///////////////////////////
+// Converts the DB layer ConnReply array to API layer ConnReply array
+func (c *ASController) prepTransactions(in []models.Transaction) []Transaction {
+	if in == nil || len(in) == 0 {
+		return make([]Transaction, 0)
+	}
+	out := make([]Transaction, len(in))
+	for i, v := range in {
+		out[i] = Transaction{
+			TransactionId: v.TransactionId,
+			Time:          v.Time,
+			Source:        v.Source,
+			Destination:   v.Destination,
+			Value:         v.Value,
+		}
+	}
+	return out
+}
+///////////////////////////
+///////////////////////////
+///////////////////////////
+
+
 // API end-point to query outstanding requests/events for an AS
 func (c *ASController) PollEvents(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -527,14 +561,25 @@ func (c *ASController) PollEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+
+	transactions, err := models.FindTransactions(isdas)		//Dennis
+	if err != nil {
+		log.Printf("Error while retrieving transactions. Account: %v, ISD-AS: %v",
+			account, isdas)
+		c.BadRequest(err, w, r)
+		return
+	}
+
 	var resp struct {
 		JoinRequests []JoinRequest
 		ConnRequests []ConnRequest
 		ConnReplies  []ConnReply
+		Transactions []Transaction	//Dennis
 	}
 	resp.JoinRequests = c.prepJoinRequests(joinRequests)
 	resp.ConnRequests = c.prepConnRequests(connRequests)
 	resp.ConnReplies = c.prepConnReplies(connReplies)
+	resp.Transactions = c.prepTransactions(transactions)	//Dennis
 
 	b, err := json.Marshal(resp)
 	if err != nil {
@@ -543,6 +588,9 @@ func (c *ASController) PollEvents(w http.ResponseWriter, r *http.Request) {
 		c.Error500(err, w, r)
 		return
 	}
+
+	
+
 	fmt.Fprintln(w, string(b))
 }
 

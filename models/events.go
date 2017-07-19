@@ -24,6 +24,24 @@ const (
 	APPROVED = "APPROVED"
 )
 
+//////////////////////////////
+type Transaction struct {			//Dennis
+	Id	      uint64 `orm:"column(id);auto;pk"`
+	TransactionId uint64
+	Time	      string
+	Source	      string
+        Destination   string
+        Value	      uint64	
+}
+
+func FindTransactions(isdas string) ([]Transaction, error) {	//Dennis
+	var transactions []Transaction
+	_, err := o.QueryTable("transaction").All(&transactions)
+	return transactions, err
+}
+////////////////////////////
+
+
 type JoinRequest struct {
 	Id            uint64 `orm:"column(id);auto;pk"`
 	RequestId     uint64

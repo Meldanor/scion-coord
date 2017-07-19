@@ -36,7 +36,7 @@ func init() {
 
 	// register the models
 	orm.RegisterModel(new(user), new(Account), new(As), new(JoinRequest), new(ConnRequest),
-		new(JoinReply), new(ConnReply))
+		new(JoinReply), new(ConnReply), new(Transaction))		//Dennis
 
 	// print verbose logs when generating the tables
 	verbose := true
